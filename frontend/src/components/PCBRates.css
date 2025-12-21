@@ -1,0 +1,54 @@
+.pcb-rates h2 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+  font-size: 22px;
+}
+
+.rates-table-container {
+  overflow-x: auto;
+}
+
+.rates-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+}
+
+.rates-table thead {
+  background-color: #3498db;
+  color: white;
+}
+
+.rates-table th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.rates-table td {
+  padding: 12px;
+  border-bottom: 1px solid #ecf0f1;
+  font-size: 14px;
+  color: #2c3e50;
+}
+
+.rates-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.rates-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #7f8c8d;
+}
+
+.empty-state p {
+  font-size: 16px;
+}
+
+

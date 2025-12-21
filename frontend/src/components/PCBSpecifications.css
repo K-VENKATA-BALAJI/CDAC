@@ -1,0 +1,81 @@
+.pcb-specifications h2 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+  font-size: 22px;
+}
+
+.specifications-form {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.spec-column {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.spec-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.spec-field label {
+  margin-bottom: 5px;
+  color: #34495e;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.spec-select {
+  padding: 10px;
+  border: 2px solid #333;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: #f0f0f0;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+
+.spec-select:hover {
+  border-color: #3498db;
+}
+
+.spec-select:focus {
+  outline: none;
+  border-color: #3498db;
+  background-color: white;
+}
+
+.calculate-button {
+  width: 100%;
+  padding: 14px;
+  background-color: #ffc107;
+  color: #333;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-top: 10px;
+}
+
+.calculate-button:hover:not(:disabled) {
+  background-color: #ffb300;
+}
+
+.calculate-button:disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .specifications-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+
