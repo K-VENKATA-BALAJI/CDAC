@@ -82,13 +82,19 @@ const PCBCalculator = ({ loadedData, onNewFile, onLoadFile }) => {
     setError('');
     
     try {
+      console.log('Sending specifications:', specifications);
       const response = await axios.post('http://localhost:8888/api/calculate-rates', {
         specifications
       });
+      console.log('Received response:', response.data);
       setVendors(response.data);
+      
+      if (!response.data || response.data.length === 0) {
+        setError('No rates found for the selected specifications. Please try different values.');
+      }
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to calculate rates');
-      console.error(err);
+      console.error('Error calculating rates:', err);
+      setError(err.response?.data?.error || 'Failed to calculate rates. Check console for details.');
     } finally {
       setLoading(false);
     }

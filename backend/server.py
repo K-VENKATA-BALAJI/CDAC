@@ -4,7 +4,15 @@ import tornado.httpserver
 import json
 import os
 from openpyxl import load_workbook
-from database import Database
+# Use MySQL database instead of SQLite
+try:
+    from database_mysql import Database
+    USE_MYSQL = True
+except ImportError:
+    # Fallback to SQLite if MySQL not available
+    from database import Database
+    USE_MYSQL = False
+    print("Warning: MySQL not available, using SQLite")
 
 class CORSHandler(tornado.web.RequestHandler):
     def set_default_headers(self):
@@ -17,27 +25,31 @@ class CORSHandler(tornado.web.RequestHandler):
         self.finish()
 
 class GetSpecificationsHandler(CORSHandler):
-    """Get PCB specification options from Excel file"""
+    """Get PCB specification options from MySQL database"""
     def get(self):
         try:
-            excel_path = os.path.join(os.path.dirname(__file__), 'data', 'pcb_specifications.xlsx')
-            wb = load_workbook(excel_path)
-            ws = wb.active
-            
-            # Read specification options from Excel
-            specifications = {}
-            
-            # Read from row 2 onwards (row 1 is header)
-            for row in ws.iter_rows(min_row=2, values_only=True):
-                if row[0]:  # Field name exists
-                    field_name = str(row[0]).strip()
-                    options = [str(val).strip() for val in row[1:] if val is not None and str(val).strip()]
-                    if options:
-                        specifications[field_name] = options
+            if USE_MYSQL:
+                # Get options from MySQL database
+                db = Database()
+                specifications = db.get_specification_options()
+            else:
+                # Fallback to Excel (old method)
+                excel_path = os.path.join(os.path.dirname(__file__), 'data', 'pcb_specifications.xlsx')
+                wb = load_workbook(excel_path)
+                ws = wb.active
+                
+                specifications = {}
+                for row in ws.iter_rows(min_row=2, values_only=True):
+                    if row[0]:
+                        field_name = str(row[0]).strip()
+                        options = [str(val).strip() for val in row[1:] if val is not None and str(val).strip()]
+                        if options:
+                            specifications[field_name] = options
             
             self.set_header("Content-Type", "application/json")
             self.write(json.dumps(specifications))
         except Exception as e:
+            print(f"Error getting specifications: {e}")
             self.set_status(500)
             self.set_header("Content-Type", "application/json")
             self.write(json.dumps({"error": str(e)}))
@@ -49,45 +61,61 @@ class CalculateRatesHandler(CORSHandler):
             data = json.loads(self.request.body)
             specifications = data.get('specifications', {})
             
-            excel_path = os.path.join(os.path.dirname(__file__), 'data', 'pcb_vendors.xlsx')
-            wb = load_workbook(excel_path)
-            ws = wb.active
-            
-            vendors = []
-            # Read vendor data from Excel
-            # Format: Vendor Name, Base Rate, Layer Multiplier, Material Multiplier, Size Multiplier
-            for row in ws.iter_rows(min_row=2, values_only=True):
-                if row[0]:  # Vendor name exists
-                    vendor_name = str(row[0])
-                    base_rate = float(row[1]) if row[1] else 0
-                    layer_mult = float(row[2]) if len(row) > 2 and row[2] else 1.0
-                    material_mult = float(row[3]) if len(row) > 3 and row[3] else 1.0
-                    size_mult = float(row[4]) if len(row) > 4 and row[4] else 1.0
+            if USE_MYSQL:
+                # Use MySQL database to get vendor rates
+                try:
+                    db = Database()
+                    vendors = db.get_vendor_rates(specifications)
                     
-                    # Calculate rate based on specifications
-                    num_layers_str = str(specifications.get('Num of Layers', '2'))
-                    try:
-                        num_layers = int(num_layers_str.split()[0])
-                    except:
-                        num_layers = 2
+                    # Log for debugging
+                    print(f"Query specifications: {specifications}")
+                    print(f"Found {len(vendors)} vendors")
                     
-                    # Apply multipliers (simplified calculation)
-                    calculated_rate = base_rate * layer_mult * material_mult * size_mult
-                    
-                    # Add some variation based on specifications
-                    if num_layers > 2:
-                        calculated_rate *= (1 + (num_layers - 2) * 0.1)
-                    
-                    vendors.append({
-                        "vendor_name": vendor_name,
-                        "rate": round(calculated_rate, 2)
-                    })
-            
-            # Sort by rate and assign rank
-            vendors.sort(key=lambda x: x['rate'])
-            for idx, vendor in enumerate(vendors, 1):
-                vendor['rank'] = idx
-                vendor['sno'] = idx
+                    if not vendors:
+                        # If no exact match found, return empty
+                        self.set_header("Content-Type", "application/json")
+                        self.write(json.dumps([]))
+                        return
+                except Exception as db_error:
+                    print(f"Database error: {db_error}")
+                    self.set_status(500)
+                    self.set_header("Content-Type", "application/json")
+                    self.write(json.dumps({"error": f"Database error: {str(db_error)}"}))
+                    return
+            else:
+                # Fallback to Excel-based calculation (old method)
+                excel_path = os.path.join(os.path.dirname(__file__), 'data', 'pcb_vendors.xlsx')
+                wb = load_workbook(excel_path)
+                ws = wb.active
+                
+                vendors = []
+                for row in ws.iter_rows(min_row=2, values_only=True):
+                    if row[0]:
+                        vendor_name = str(row[0])
+                        base_rate = float(row[1]) if row[1] else 0
+                        layer_mult = float(row[2]) if len(row) > 2 and row[2] else 1.0
+                        material_mult = float(row[3]) if len(row) > 3 and row[3] else 1.0
+                        size_mult = float(row[4]) if len(row) > 4 and row[4] else 1.0
+                        
+                        num_layers_str = str(specifications.get('Num of Layers', '2'))
+                        try:
+                            num_layers = int(num_layers_str.split()[0])
+                        except:
+                            num_layers = 2
+                        
+                        calculated_rate = base_rate * layer_mult * material_mult * size_mult
+                        if num_layers > 2:
+                            calculated_rate *= (1 + (num_layers - 2) * 0.1)
+                        
+                        vendors.append({
+                            "vendor_name": vendor_name,
+                            "rate": round(calculated_rate, 2)
+                        })
+                
+                vendors.sort(key=lambda x: x['rate'])
+                for idx, vendor in enumerate(vendors, 1):
+                    vendor['rank'] = idx
+                    vendor['sno'] = idx
             
             self.set_header("Content-Type", "application/json")
             self.write(json.dumps(vendors))
