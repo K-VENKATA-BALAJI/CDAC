@@ -104,3 +104,4 @@ The import script now:
 **"No rates imported"**
 → Check Excel file path is correct
 
+

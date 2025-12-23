@@ -111,3 +111,4 @@ INSERT INTO vendors (vendor_name, company_name, address, phone) VALUES
 
 -- Note: Actual rate data will be imported from Excel using the import script
 
+

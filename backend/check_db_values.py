@@ -55,3 +55,4 @@ print(f"\nCopper Thickness: {copper}")
 
 conn.close()
 
+

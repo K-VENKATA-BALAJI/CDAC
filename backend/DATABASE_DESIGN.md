@@ -182,3 +182,4 @@ To add a new vendor:
 4. **Support multiple currencies**
 5. **Add rate history** tracking (versioning)
 
+

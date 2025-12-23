@@ -182,3 +182,4 @@ mysql -u root -p -e "USE pcb_rate_contract; SELECT COUNT(*) FROM vendor_rates;"
 3. Test with different specification combinations
 4. Verify all rates are correct
 
+
