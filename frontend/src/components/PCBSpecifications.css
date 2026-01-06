@@ -1,3 +1,11 @@
+.pcb-specifications {
+  background: white;
+  border-radius: 6px;
+  padding: 25px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  margin-bottom: 20px;
+}
+
 .pcb-specifications h2 {
   color: #2c3e50;
   margin-bottom: 20px;
@@ -7,8 +15,8 @@
 .specifications-form {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
-  margin-bottom: 20px;
+  gap: 18px 20px;
+  margin-bottom: 25px;
 }
 
 .spec-column {
@@ -17,54 +25,97 @@
   gap: 15px;
 }
 
+.required-asterisk {
+  color: #e74c3c;
+  margin-left: 2px;
+}
+
+.spec-input {
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: white;
+  transition: all 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+  color: #333;
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+.spec-input:hover {
+  border-color: #999;
+}
+
+.spec-input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.15);
+}
+
+.select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
 .spec-field {
   display: flex;
   flex-direction: column;
 }
 
 .spec-field label {
-  margin-bottom: 5px;
-  color: #34495e;
+  margin-bottom: 6px;
+  color: #2c3e50;
   font-size: 14px;
   font-weight: 500;
+  display: block;
+  line-height: 1.4;
 }
 
 .spec-select {
-  padding: 10px;
-  border: 2px solid #333;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 14px;
-  background-color: #f0f0f0;
+  background-color: white;
+  transition: all 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+  color: #333;
+  font-family: inherit;
+  line-height: 1.4;
   cursor: pointer;
-  transition: border-color 0.3s;
 }
 
 .spec-select:hover {
-  border-color: #3498db;
+  border-color: #999;
 }
 
 .spec-select:focus {
   outline: none;
   border-color: #3498db;
-  background-color: white;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.15);
 }
 
 .calculate-button {
   width: 100%;
-  padding: 14px;
-  background-color: #ffc107;
-  color: #333;
+  padding: 12px 24px;
+  background-color: #ff9800;
+  color: white;
   border: none;
   border-radius: 4px;
   font-size: 16px;
-  font-weight: bold;
+  font-weight: 600;
   cursor: pointer;
   transition: background-color 0.3s;
-  margin-top: 10px;
+  margin-top: 15px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .calculate-button:hover:not(:disabled) {
-  background-color: #ffb300;
+  background-color: #f57c00;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .calculate-button:disabled {

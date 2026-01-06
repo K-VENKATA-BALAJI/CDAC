@@ -1,3 +1,11 @@
+.pcb-rates {
+  background: white;
+  border-radius: 6px;
+  padding: 25px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  margin-bottom: 20px;
+}
+
 .pcb-rates h2 {
   color: #2c3e50;
   margin-bottom: 20px;
@@ -33,6 +41,11 @@
   color: #2c3e50;
 }
 
+.empty-row td {
+  color: #bbb;
+  font-style: italic;
+}
+
 .rates-table tbody tr:hover {
   background-color: #f8f9fa;
 }
@@ -50,5 +63,3 @@
 .empty-state p {
   font-size: 16px;
 }
-
-

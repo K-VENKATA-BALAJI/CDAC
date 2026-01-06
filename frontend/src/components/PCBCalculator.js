@@ -51,22 +51,37 @@ const PCBCalculator = ({ loadedData, onNewFile, onLoadFile }) => {
   const loadSpecifications = async () => {
     try {
       const response = await axios.get('http://localhost:8888/api/specifications');
+      console.log('Specifications loaded:', response.data);
       setSpecOptions(response.data);
       
       // Initialize default values
       const defaults = {};
       Object.keys(response.data).forEach(key => {
-        if (response.data[key].length > 0) {
+        if (response.data[key] && response.data[key].length > 0) {
           defaults[key] = response.data[key][0];
+          console.log(`Setting default for ${key}:`, response.data[key][0]);
         }
       });
+      
+      // Set default for Quantity if not provided
+      if (!defaults['Quantity']) {
+        defaults['Quantity'] = '100';
+      }
+      
+      // Set default for Delivery Type if not provided
+      if (!defaults['Delivery Type'] && response.data['Delivery Type'] && response.data['Delivery Type'].length > 0) {
+        defaults['Delivery Type'] = response.data['Delivery Type'][0];
+      }
+      
+      console.log('Default specifications:', defaults);
       
       if (!loadedData) {
         setSpecifications(defaults);
       }
     } catch (err) {
       setError('Failed to load specifications');
-      console.error(err);
+      console.error('Error loading specifications:', err);
+      console.error('Error details:', err.response?.data);
     }
   };
 

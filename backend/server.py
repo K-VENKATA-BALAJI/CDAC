@@ -72,10 +72,15 @@ class CalculateRatesHandler(CORSHandler):
                     print(f"Found {len(vendors)} vendors")
                     
                     if not vendors:
-                        # If no exact match found, return empty
+                        # If no match found, return empty array
                         self.set_header("Content-Type", "application/json")
                         self.write(json.dumps([]))
                         return
+                    
+                    # Return vendors sorted by rate
+                    self.set_header("Content-Type", "application/json")
+                    self.write(json.dumps(vendors))
+                    return
                 except Exception as db_error:
                     print(f"Database error: {db_error}")
                     self.set_status(500)

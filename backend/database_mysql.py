@@ -44,10 +44,10 @@ class Database:
         try:
             specifications = {}
             
-            # Get Num of Layers
+            # Get PCB Copper Layers (mapped from num_layers)
             cursor.execute('SELECT DISTINCT num_layers FROM vendor_rates ORDER BY num_layers')
             layers = [str(r['num_layers']) for r in cursor.fetchall()]
-            specifications['Num of Layers'] = layers
+            specifications['PCB Copper Layers'] = layers
             
             # Get Thickness (filter out non-thickness values)
             cursor.execute('SELECT DISTINCT thickness FROM vendor_rates ORDER BY thickness')
@@ -62,39 +62,39 @@ class Database:
                         thickness_options.append(f"{t}mm")
                     else:
                         thickness_options.append(t)
-            specifications['Thickness'] = sorted(set(thickness_options), key=lambda x: (x.startswith('below'), x.startswith('above'), float(x.replace('mm', '').replace('above ', '').replace('below ', '')) if x.replace('mm', '').replace('above ', '').replace('below ', '').replace('.', '').isdigit() else 999))
+            specifications['PCB Thickness'] = sorted(set(thickness_options), key=lambda x: (x.startswith('below'), x.startswith('above'), float(x.replace('mm', '').replace('above ', '').replace('below ', '')) if x.replace('mm', '').replace('above ', '').replace('below ', '').replace('.', '').isdigit() else 999))
             
-            # Get Track / Spacing
+            # Get Track/Spacings(mil)
             cursor.execute('SELECT DISTINCT track_spacing FROM vendor_rates WHERE track_spacing != "" ORDER BY track_spacing')
             track_spacing = [r['track_spacing'] for r in cursor.fetchall()]
-            specifications['Track / Spacing'] = track_spacing
+            specifications['Track/Spacings(mil)'] = track_spacing
             
-            # Get Via Hole/Pad
+            # Get Via Drill/Finish
             cursor.execute('SELECT DISTINCT via_drill_pad FROM vendor_rates WHERE via_drill_pad != "" ORDER BY via_drill_pad')
             via = [r['via_drill_pad'] for r in cursor.fetchall()]
-            specifications['Via Hole/Pad'] = via
+            specifications['Via Drill/Finish'] = via
             
-            # Get Solder Mask
+            # Get Solder Mask & Legend
             cursor.execute('SELECT DISTINCT solder_mask FROM vendor_rates ORDER BY solder_mask')
             solder_mask = [r['solder_mask'] for r in cursor.fetchall()]
-            specifications['Solder Mask'] = solder_mask
+            specifications['Solder Mask & Legend'] = solder_mask
             
-            # Get Material (if available)
+            # Get PCB Material (if available)
             cursor.execute('SELECT DISTINCT material FROM vendor_rates WHERE material IS NOT NULL AND material != ""')
             material = [r['material'] for r in cursor.fetchall()]
             if material:
-                specifications['Material'] = material
+                specifications['PCB Material'] = material
             else:
                 # Default options if not in database
-                specifications['Material'] = ['FR-4', 'FR-4 High Tg', 'Rogers', 'Aluminum']
+                specifications['PCB Material'] = ['Glass Epoxy', 'FR-4', 'FR-4 High Tg', 'Rogers', 'Aluminum']
             
-            # Get Surface Finish
+            # Get PCB Finish
             cursor.execute('SELECT DISTINCT surface_finish FROM vendor_rates WHERE surface_finish IS NOT NULL AND surface_finish != ""')
             surface_finish = [r['surface_finish'] for r in cursor.fetchall()]
             if surface_finish:
-                specifications['Surface Finish'] = surface_finish
+                specifications['PCB Finish'] = surface_finish
             else:
-                specifications['Surface Finish'] = ['HASL', 'ENIG', 'OSP', 'Immersion Silver']
+                specifications['PCB Finish'] = ['HASL', 'ENIG', 'OSP', 'Immersion Silver', 'Immersion Tin']
             
             # Get Copper Thickness
             cursor.execute('SELECT DISTINCT copper_thickness FROM vendor_rates WHERE copper_thickness IS NOT NULL AND copper_thickness != ""')
@@ -102,23 +102,14 @@ class Database:
             if copper:
                 specifications['Copper Thickness'] = copper
             else:
-                specifications['Copper Thickness'] = ['1 oz', '0.5 oz', '2 oz', '3 oz']
+                specifications['Copper Thickness'] = ['35 Microns', '1 oz', '0.5 oz', '2 oz', '3 oz']
             
-            # Add other fields with default options (not in database but needed for UI)
-            if 'Via Filling' not in specifications:
-                specifications['Via Filling'] = ['Tented', 'Filled', 'Non-filled', 'Via in Pad']
+            # Add new fields with default options
+            if 'Quantity' not in specifications:
+                specifications['Quantity'] = []  # Text input, no options needed
             
-            if 'Size' not in specifications:
-                specifications['Size'] = ['100x100mm', '50x50mm', '150x150mm', '200x200mm']
-            
-            if 'Single Ended Impedance' not in specifications:
-                specifications['Single Ended Impedance'] = ['Yes', 'No']
-            
-            if 'Colour' not in specifications:
-                specifications['Colour'] = ['Green', 'Blue', 'Red', 'Yellow', 'White', 'Black']
-            
-            if 'Differential Impedance' not in specifications:
-                specifications['Differential Impedance'] = ['Yes', 'No']
+            if 'Delivery Type' not in specifications:
+                specifications['Delivery Type'] = ['Normal', 'Express', 'Urgent', 'Standard']
             
             return specifications
             
@@ -218,9 +209,11 @@ class Database:
             """
             params = []
             
-            # Match specifications
-            if 'Num of Layers' in specifications:
-                num_layers_str = str(specifications['Num of Layers']).strip()
+            # Match specifications - handle both old and new field names
+            # PCB Copper Layers (new) or Num of Layers (old)
+            num_layers_key = 'PCB Copper Layers' if 'PCB Copper Layers' in specifications else 'Num of Layers'
+            if num_layers_key in specifications:
+                num_layers_str = str(specifications[num_layers_key]).strip()
                 try:
                     num_layers = int(num_layers_str.split()[0])
                     query += " AND vr.num_layers = %s"
@@ -228,34 +221,49 @@ class Database:
                 except:
                     pass  # Skip if can't parse
             
-            if 'Thickness' in specifications:
-                thickness = str(specifications['Thickness']).strip()
+            # PCB Thickness (new) or Thickness (old)
+            thickness_key = 'PCB Thickness' if 'PCB Thickness' in specifications else 'Thickness'
+            if thickness_key in specifications:
+                thickness = str(specifications[thickness_key]).strip()
                 # Remove "mm" suffix if present and normalize
                 thickness = thickness.replace('mm', '').strip()
-                # Try exact match first
+                # Try exact match first, then try LIKE for ranges like "below 0.8" or "above 3.2"
+                # For now, use exact match - if no results, we could add fallback logic
                 query += " AND vr.thickness = %s"
                 params.append(thickness)
             
-            if 'Track / Spacing' in specifications:
-                track_spacing = str(specifications['Track / Spacing']).strip()
+            # Track/Spacings(mil) (new) or Track / Spacing (old)
+            track_key = 'Track/Spacings(mil)' if 'Track/Spacings(mil)' in specifications else 'Track / Spacing'
+            if track_key in specifications:
+                track_spacing = str(specifications[track_key]).strip()
                 # Normalize format: "6/6 mil" -> "6 / 6 mil"
                 if '/' in track_spacing and ' / ' not in track_spacing:
                     track_spacing = track_spacing.replace('/', ' / ')
-                query += " AND vr.track_spacing = %s"
+                # Allow empty track_spacing in database to match any value
+                query += " AND (vr.track_spacing = %s OR vr.track_spacing = '' OR vr.track_spacing IS NULL)"
                 params.append(track_spacing)
             
-            if 'Via Hole/Pad' in specifications:
-                via_drill_pad = str(specifications['Via Hole/Pad']).strip()
+            # Via Drill/Finish (new) or Via Hole/Pad (old)
+            via_key = 'Via Drill/Finish' if 'Via Drill/Finish' in specifications else 'Via Hole/Pad'
+            if via_key in specifications:
+                via_drill_pad = str(specifications[via_key]).strip()
                 # Normalize format: "12/24 mil" -> "12 / 24 mil"
                 if '/' in via_drill_pad and ' / ' not in via_drill_pad:
                     via_drill_pad = via_drill_pad.replace('/', ' / ')
                 query += " AND vr.via_drill_pad = %s"
                 params.append(via_drill_pad)
             
-            # Add solder mask if specified (default to YES)
-            solder_mask = specifications.get('Solder Mask', 'YES')
+            # Solder Mask & Legend (new) or Solder Mask (old)
+            solder_mask_key = 'Solder Mask & Legend' if 'Solder Mask & Legend' in specifications else 'Solder Mask'
+            solder_mask = specifications.get(solder_mask_key, 'YES')
             if isinstance(solder_mask, str):
-                solder_mask = 'YES' if solder_mask.upper() == 'YES' else 'NO'
+                # Handle "Yes"/"No" or "YES"/"NO"
+                if solder_mask.upper() in ['YES', 'Y']:
+                    solder_mask = 'YES'
+                elif solder_mask.upper() in ['NO', 'N']:
+                    solder_mask = 'NO'
+                else:
+                    solder_mask = 'YES'
             else:
                 solder_mask = 'YES'
             query += " AND vr.solder_mask = %s"
