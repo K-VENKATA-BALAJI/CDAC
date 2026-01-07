@@ -15,6 +15,9 @@ function App() {
 
   return (
     <div className="App">
+      <div className="banner-container">
+        <img src="/1.jpeg" alt="PCB Banner" className="banner-image" />
+      </div>
       <PCBCalculator 
         loadedData={loadedData}
         onNewFile={handleNewFile}
